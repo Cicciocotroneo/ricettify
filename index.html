@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#ffffff">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icon.png">
+    <title>Ricetta Medica</title>
+    <style>
+        body {
+            font-family: 'Courier New', Courier, monospace;
+            margin: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        label {
+            display: block;
+            margin-top: 10px;
+        }
+        input, textarea, select {
+            width: 100%;
+            padding: 8px;
+            margin-top: 5px;
+            box-sizing: border-box;
+        }
+        button {
+            margin-top: 10px;
+            padding: 10px 20px;
+            cursor: pointer;
+        }
+        .output {
+            margin-top: 20px;
+            border: 1px solid #ccc;
+            padding: 20px;
+            background-color: #f9f9f9;
+            position: relative;
+            font-size: 12px;
+        }
+        .header {
+            text-align: right;
+            margin-bottom: 40px;
+        }
+        .header p {
+            margin: 0;
+            text-align: left;
+        }
+        .patient-info {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .patient-info p {
+            margin: 0;
+        }
+        .prescription-details, .request-details {
+            margin-bottom: 30px;
+        }
+        .diagnosis-section {
+            margin-bottom: 25px;
+        }
+        .prescription-section {
+            margin-top: 25px;
+            margin-bottom: 30px;
+        }
+        .date-info {
+            margin-bottom: 20px;
+        }
+        .signature {
+            text-align: center;
+            margin-left: auto;
+            margin-right: 0;
+            width: fit-content;
+            margin-top: 0px;
+        }
+        .signature p {
+            margin: 0;
+            line-height: 1;
+        }
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            margin-top: 10px;
+        }
+        .checkbox-group label {
+            margin: 0 10px 0 5px;
+        }
+        .profile-selector {
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #f5f5f5;
+            border-radius: 5px;
+        }
+        .profile-selector p {
+            margin: 0 0 10px 0;
+        }
+        .action-links {
+            display: flex;
+            justify-content: space-between;
+            margin: 10px 0 20px 0;
+        }
+        .action-links a {
+            text-decoration: none;
+            color: #0066cc;
+        }
+        .no-profile-warning {
+            background-color: #fff3cd;
+            padding: 10px;
+            border: 1px solid #ffeeba;
+            margin-bottom: 15px;
+            display: none;
+        }
+        @media print {
+            @page {
+                size: A5;
+                margin: 15mm; /* Margini aumentati a 15mm su tutti i lati */
+            }
+            body {
+                font-size: 10px;
+                width: 118mm; /* Larghezza A5 (148mm) meno i margini */
+                height: 180mm; /* Altezza A5 (210mm) meno i margini */
+                margin: 0;
+                padding: 0;
+            }
+            .container {
+                max-width: 118mm; /* Larghezza contenitore adattata */
+            }
+            button, .container > h1, form, .action-links, .profile-selector {
+                display: none;
+            }
+            .output {
+                border: none;
+                padding: 0;
+                margin: 0;
+                width: 100%;
+            }
+            .header {
+                margin-bottom: 40px;
+            }
+            .patient-info {
+                margin-bottom: 40px;
+            }
+            .diagnosis-section {
+                margin-bottom: 25px;
+            }
+            .prescription-section {
+                margin-top: 25px;
+                margin-bottom: 40px;
+            }
+            .date-info {
+                margin-bottom: 15px;
+            }
+            .signature {
+                margin-top: 0px;
+                margin-left: 60%; /* Sposta la firma più a destra */
+            }
+        }
+        @media (max-width: 600px) {
+            .container {
+                padding: 10px;
+            }
+            input, textarea, select {
+                font-size: 16px; /* Migliora la leggibilità su mobile */
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Modulo Ricetta Medica</h1>
+
+        <div class="action-links">
+            <a href="gestione-medici.html">Gestione Profili Medici</a>
+        </div>
+
+        <div class="profile-selector" id="profileSelector">
+            <div class="no-profile-warning" id="noProfileWarning">
+                Nessun profilo medico configurato. <a href="gestione-medici.html">Crea un profilo</a> per personalizzare le tue ricette.
+            </div>
+            <p>Profilo medico selezionato: <strong id="currentProfileName">Nessuno</strong></p>
+            <select id="profileSelect">
+                <option value="">Seleziona un profilo</option>
+            </select>
+        </div>
+        
+        <form id="prescriptionForm">
+            <label for="patientName">Nome del Paziente:</label>
+            <input type="text" id="patientName" required>
+
+            <label for="birthPlace">Luogo di Nascita:</label>
+            <input type="text" id="birthPlace" required>
+
+            <label for="birthDate">Data di Nascita (dd/mm/yyyy):</label>
+            <input type="text" id="birthDate" pattern="\d{2}/\d{2}/\d{4}" placeholder="dd/mm/yyyy" required>
+
+            <div class="checkbox-group">
+                <label><input type="radio" name="diagnosisType" value="sospetto" checked> Sospetto</label>
+                <label><input type="radio" name="diagnosisType" value="diagnosi"> Diagnosi</label>
+            </div>
+
+            <label for="diagnosis">Descrizione Diagnosi/Sospetto:</label>
+            <input type="text" id="diagnosis" required>
+
+            <div class="checkbox-group">
+                <label><input type="radio" name="type" value="prescrizione" checked> Prescrizione</label>
+                <label><input type="radio" name="type" value="richiesta"> Richiesta</label>
+            </div>
+
+            <label for="details">Dettagli Prescrizione/Richiesta:</label>
+            <textarea id="details" rows="4" required></textarea>
+
+            <label for="prescriptionPlace">Luogo della Ricetta:</label>
+            <input type="text" id="prescriptionPlace" required>
+
+            <label for="prescriptionDate">Data della Ricetta (dd/mm/yyyy):</label>
+            <input type="text" id="prescriptionDate" pattern="\d{2}/\d{2}/\d{4}" placeholder="dd/mm/yyyy" required>
+
+            <button type="submit" id="generateButton">Genera Ricetta</button>
+        </form>
+
+        <div class="output" id="outputSection" style="display: none;">
+            <div class="header" id="outputHeader">
+                <!-- Sarà popolato dinamicamente dal profilo selezionato -->
+            </div>
+            <div class="patient-info">
+                <p><strong id="outputPatientName"></strong></p>
+                <p>(<span id="outputBirthPlace"></span>, <span id="outputBirthDate"></span>)</p>
+            </div>
+            <div class="diagnosis-section" id="outputDiagnosis"></div>
+            <div class="prescription-section" id="outputPrescription"></div>
+            <div class="date-info">
+                <p><span id="outputPrescriptionPlace"></span>, <span id="outputPrescriptionDate"></span></p>
+            </div>
+            <div class="signature" id="outputSignature">
+                <!-- Sarà popolato dinamicamente dal profilo selezionato -->
+            </div>
+            <button onclick="handlePrintPDF()">Stampa PDF</button>
+        </div>
+    </div>
+
+    <script>
+        // Definizione delle variabili globali
+        let doctorProfiles = [];
+        let activeProfileId = null;
+        
+        // Elementi DOM principali
+        const profileSelect = document.getElementById('profileSelect');
+        const currentProfileName = document.getElementById('currentProfileName');
+        const noProfileWarning = document.getElementById('noProfileWarning');
+        const outputHeader = document.getElementById('outputHeader');
+        const outputSignature = document.getElementById('outputSignature');
+        const form = document.getElementById('prescriptionForm');
+        const outputSection = document.getElementById('outputSection');
+        const outputPatientName = document.getElementById('outputPatientName');
+        const outputBirthPlace = document.getElementById('outputBirthPlace');
+        const outputBirthDate = document.getElementById('outputBirthDate');
+        const outputDiagnosis = document.getElementById('outputDiagnosis');
+        const outputPrescription = document.getElementById('outputPrescription');
+        const outputPrescriptionPlace = document.getElementById('outputPrescriptionPlace');
+        const outputPrescriptionDate = document.getElementById('outputPrescriptionDate');
+        const generateButton = document.getElementById('generateButton');
+
+        // Inizializzazione dell'applicazione
+        document.addEventListener('DOMContentLoaded', initializeApp);
+
+        function initializeApp() {
+            // Imposta data odierna
+            setCurrentDate();
+            
+            // Carica i profili e configura il selettore
+            loadProfiles();
+            
+            // Configura gli event listener
+            profileSelect.addEventListener('change', handleProfileChange);
+            form.addEventListener('submit', handleFormSubmit);
+        }
+
+        // Imposta la data corrente nel campo data della ricetta
+        function setCurrentDate() {
+            const today = new Date();
+            const day = String(today.getDate()).padStart(2, '0');
+            const month = String(today.getMonth() + 1).padStart(2, '0');
+            const year = today.getFullYear();
+            
+            const formattedDate = `${day}/${month}/${year}`;
+            document.getElementById('prescriptionDate').value = formattedDate;
+        }
+
+        // Carica i profili medici dal localStorage
+        function loadProfiles() {
+            try {
+                const profilesJson = localStorage.getItem('doctorProfiles');
+                doctorProfiles = profilesJson ? JSON.parse(profilesJson) : [];
+                activeProfileId = localStorage.getItem('activeProfileId');
+                
+                updateProfileSelector();
+            } catch (error) {
+                console.error("Errore nel caricamento dei profili:", error);
+                doctorProfiles = [];
+                activeProfileId = null;
+                updateProfileSelector();
+            }
+        }
+
+        // Aggiorna il selettore di profili
+        function updateProfileSelector() {
+            // Resetta il selettore
+            profileSelect.innerHTML = '<option value="">Seleziona un profilo</option>';
+            
+            if (doctorProfiles.length === 0) {
+                noProfileWarning.style.display = 'block';
+                currentProfileName.textContent = 'Nessuno';
+                return;
+            }
+            
+            noProfileWarning.style.display = 'none';
+            
+            // Popola il selettore con i profili disponibili
+            doctorProfiles.forEach(profile => {
+                const option = document.createElement('option');
+                option.value = profile.id;
+                option.textContent = profile.name;
+                
+                if (profile.id === activeProfileId) {
+                    option.selected = true;
+                    currentProfileName.textContent = profile.name;
+                    updateOutputWithProfile(profile);
+                }
+                
+                profileSelect.appendChild(option);
+            });
+            
+            // Se non c'è un profilo attivo ma ci sono profili disponibili
+            if (!activeProfileId && doctorProfiles.length > 0) {
+                currentProfileName.textContent = 'Nessuno selezionato';
+            }
+        }
+
+        // Gestisce il cambio del profilo selezionato
+        function handleProfileChange() {
+            const selectedProfileId = this.value;
+            
+            if (!selectedProfileId) {
+                currentProfileName.textContent = 'Nessuno';
+                outputHeader.innerHTML = '';
+                outputSignature.innerHTML = '';
+                return;
+            }
+            
+            const selectedProfile = doctorProfiles.find(p => p.id === selectedProfileId);
+            
+            if (selectedProfile) {
+                currentProfileName.textContent = selectedProfile.name;
+                updateOutputWithProfile(selectedProfile);
+                activeProfileId = selectedProfileId;
+                localStorage.setItem('activeProfileId', selectedProfileId);
+            }
+        }
+
+        // Gestisce l'invio del form e genera la ricetta
+        function handleFormSubmit(e) {
+            e.preventDefault();
+            
+            // Verifica se un profilo è selezionato
+            if (!profileSelect.value) {
+                alert("Seleziona un profilo medico prima di generare la ricetta");
+                return;
+            }
+
+            // Raccoglie i dati del form
+            const formData = {
+                patientName: document.getElementById('patientName').value,
+                birthPlace: document.getElementById('birthPlace').value,
+                birthDate: document.getElementById('birthDate').value,
+                diagnosisType: document.querySelector('input[name="diagnosisType"]:checked').value,
+                diagnosis: document.getElementById('diagnosis').value,
+                type: document.querySelector('input[name="type"]:checked').value,
+                details: document.getElementById('details').value,
+                prescriptionPlace: document.getElementById('prescriptionPlace').value,
+                prescriptionDate: document.getElementById('prescriptionDate').value
+            };
+
+            // Validazione delle date
+            if (!isValidDate(formData.birthDate) || !isValidDate(formData.prescriptionDate)) {
+                alert("Inserisci una data valida nel formato dd/mm/yyyy.");
+                return;
+            }
+
+            // Aggiorna l'output con i dati del form
+            updateOutputWithFormData(formData);
+            
+            // Mostra la ricetta
+            outputSection.style.display = 'block';
+            
+            // Scroll all'elemento output
+            outputSection.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Aggiorna l'output con i dati del profilo selezionato
+        function updateOutputWithProfile(profile) {
+            if (!profile) return;
+            
+            // Aggiorna intestazione
+            let headerHtml = '';
+            if (profile.doctorName) headerHtml += `<p>${profile.doctorName}</p>`;
+            if (profile.specialization) headerHtml += `<p>${profile.specialization}</p>`;
+            if (profile.address) headerHtml += `<p>${profile.address}</p>`;
+            
+            let locationText = '';
+            if (profile.postalCode) locationText += profile.postalCode;
+            if (profile.city) {
+                if (locationText) locationText += ' ';
+                locationText += profile.city;
+            }
+            if (locationText) headerHtml += `<p>${locationText}</p>`;
+            
+            if (profile.phone) headerHtml += `<p>Tel. ${profile.phone}</p>`;
+            if (profile.email) headerHtml += `<p>E mail: ${profile.email}</p>`;
+            
+            outputHeader.innerHTML = headerHtml;
+            
+            // Aggiorna firma
+            let signatureHtml = '';
+            let prefix = profile.signatureTitle ? profile.signatureTitle + ' ' : '';
+            if (profile.doctorFullName) signatureHtml += `<p>${prefix}${profile.doctorFullName}</p>`;
+            if (profile.medicalOrderInfo) signatureHtml += `<p>${profile.medicalOrderInfo}</p>`;
+            
+            // Aggiungi immagine della firma se presente
+            if (profile.signatureData) {
+                signatureHtml += `<img src="${profile.signatureData}" alt="Firma" style="width: 150px;">`;
+            }
+            
+            outputSignature.innerHTML = signatureHtml;
+        }
+
+        // Aggiorna l'output con i dati del form
+        function updateOutputWithFormData(data) {
+            outputPatientName.textContent = data.patientName;
+            outputBirthPlace.textContent = data.birthPlace;
+            outputBirthDate.textContent = data.birthDate;
+            outputPrescriptionPlace.textContent = data.prescriptionPlace;
+            outputPrescriptionDate.textContent = data.prescriptionDate;
+
+            // Mostra diagnosi/sospetto
+            if (data.diagnosisType === 'sospetto') {
+                outputDiagnosis.innerHTML = `<strong>Si sospetta:</strong><br>${data.diagnosis}`;
+            } else {
+                outputDiagnosis.innerHTML = `<strong>Diagnosi:</strong><br>${data.diagnosis}`;
+            }
+            
+            // Aggiungi una riga vuota dopo la diagnosi
+            outputDiagnosis.innerHTML += `<br>`;
+
+            // Mostra prescrizione/richiesta
+            if (data.type === 'prescrizione') {
+                outputPrescription.innerHTML = `<strong>Prescrizione:</strong><br>${formatList(data.details)}`;
+            } else {
+                outputPrescription.innerHTML = `<strong>Richiesta:</strong><br>${formatList(data.details)}`;
+            }
+        }
+
+        // Formatta una lista di elementi
+        function formatList(text) {
+            return text.split('\n').map(line => `- ${line}`).join('<br>');
+        }
+
+        // Verifica la validità di una data nel formato dd/mm/yyyy
+        function isValidDate(dateString) {
+            const pattern = /^\d{2}\/\d{2}\/\d{4}$/;
+            if (!pattern.test(dateString)) return false;
+            
+            const [day, month, year] = dateString.split('/').map(Number);
+            const date = new Date(year, month - 1, day);
+            
+            return date.getFullYear() === year && 
+                   date.getMonth() === month - 1 && 
+                   date.getDate() === day;
+        }
+
+        // Gestisce la stampa della ricetta come PDF
+        function handlePrintPDF() {
+            window.print();
+        }
+
+        // Registra il Service Worker per PWA
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js')
+                    .then(registration => {
+                        console.log('Service Worker registrato con successo:', registration);
+                    })
+                    .catch(error => {
+                        console.log('Registrazione del Service Worker fallita:', error);
+                    });
+            });
+        }
+    </script>
+</body>
+</html>

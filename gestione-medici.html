@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#ffffff">
+    <title>Gestione Profili Medici</title>
+    <style>
+        body {
+            font-family: 'Courier New', Courier, monospace;
+            margin: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        label {
+            display: block;
+            margin-top: 10px;
+        }
+        input, textarea, select {
+            width: 100%;
+            padding: 8px;
+            margin-top: 5px;
+            box-sizing: border-box;
+        }
+        button {
+            margin-top: 10px;
+            padding: 10px 20px;
+            cursor: pointer;
+        }
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .profile-list {
+            margin-top: 20px;
+            border: 1px solid #ccc;
+            padding: 15px;
+            background-color: #f9f9f9;
+        }
+        .profile-item {
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            background-color: #fff;
+            position: relative;
+        }
+        .profile-item.selected {
+            background-color: #e0f7fa;
+            border-color: #4fc3f7;
+        }
+        .profile-actions {
+            position: absolute;
+            right: 10px;
+            top: 10px;
+        }
+        .back-link {
+            display: inline-block;
+            margin: 20px 0;
+            text-decoration: none;
+            color: #0066cc;
+        }
+        .preview {
+            margin-top: 20px;
+            border: 1px solid #ccc;
+            padding: 20px;
+            background-color: #f9f9f9;
+        }
+        .preview-header, .preview-signature {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 12px;
+        }
+        .preview-header p, .preview-signature p {
+            margin: 0;
+            line-height: 1.3;
+        }
+        .no-profiles {
+            padding: 15px;
+            text-align: center;
+            color: #666;
+        }
+        .debug-info {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #f0f0f0;
+            border: 1px solid #ddd;
+            font-family: monospace;
+            font-size: 12px;
+            display: none;
+        }
+        @media (max-width: 600px) {
+            .container {
+                padding: 10px;
+            }
+            input, textarea, select {
+                font-size: 16px;
+            }
+            .button-group {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Gestione Profili Medici</h1>
+        <p>Crea e gestisci i tuoi profili medici per le ricette.</p>
+
+        <a href="index.html" class="back-link">← Torna alla Ricetta Medica</a>
+        
+        <form id="doctorProfileForm">
+            <label for="profileName">Nome del Profilo:</label>
+            <input type="text" id="profileName" required>
+
+            <h3>Informazioni Intestazione</h3>
+            
+            <label for="doctorName">Nome e Cognome:</label>
+            <input type="text" id="doctorName" required>
+            
+            <label for="specialization">Specializzazione:</label>
+            <input type="text" id="specialization">
+            
+            <label for="address">Indirizzo:</label>
+            <input type="text" id="address">
+            
+            <label for="postalCode">CAP:</label>
+            <input type="text" id="postalCode">
+            
+            <label for="city">Città:</label>
+            <input type="text" id="city">
+            
+            <label for="phone">Telefono:</label>
+            <input type="text" id="phone">
+            
+            <label for="email">Email:</label>
+            <input type="email" id="email">
+            
+            <h3>Informazioni Firma</h3>
+            
+            <label for="signatureTitle">Titolo nella Firma:</label>
+            <input type="text" id="signatureTitle" placeholder="Es: Dr.">
+            
+            <label for="doctorFullName">Nome Completo nella Firma:</label>
+            <input type="text" id="doctorFullName">
+            
+            <label for="medicalOrderInfo">Informazioni Ordine dei Medici:</label>
+            <input type="text" id="medicalOrderInfo" placeholder="Es: Ordine dei Medici di Milano 12345">
+            
+            <label for="signatureUpload">Carica Firma (PNG):</label>
+            <input type="file" id="signatureUpload" accept="image/png">
+            <input type="hidden" id="signatureData">
+            
+            <div class="button-group">
+                <button type="submit" id="saveButton">Salva Profilo</button>
+                <button type="button" id="updateButton" style="display: none;">Aggiorna Profilo</button>
+                <button type="button" id="cancelButton" style="display: none;">Annulla Modifica</button>
+            </div>
+        </form>
+        
+        <div class="preview" id="previewSection">
+            <h3>Anteprima</h3>
+            <div class="preview-header" id="previewHeader"></div>
+            <hr>
+            <div class="preview-signature" id="previewSignature"></div>
+            <img id="previewSignatureImg" style="max-width: 150px; display: none;">
+        </div>
+        
+        <h2>Profili Salvati</h2>
+        <div class="profile-list" id="profileList">
+            <div class="no-profiles" id="noProfilesMessage">Nessun profilo salvato</div>
+        </div>
+        
+        <div class="debug-info" id="debugInfo"></div>
+    </div>
+
+    <script>
+        // Definizione delle variabili globali
+        let doctorProfiles = [];
+        let activeProfileId = null;
+        let currentEditingProfileId = null;
+        
+        // Elementi DOM
+        const form = document.getElementById('doctorProfileForm');
+        const profileNameInput = document.getElementById('profileName');
+        const doctorNameInput = document.getElementById('doctorName');
+        const specializationInput = document.getElementById('specialization');
+        const addressInput = document.getElementById('address');
+        const postalCodeInput = document.getElementById('postalCode');
+        const cityInput = document.getElementById('city');
+        const phoneInput = document.getElementById('phone');
+        const emailInput = document.getElementById('email');
+        const signatureTitleInput = document.getElementById('signatureTitle');
+        const doctorFullNameInput = document.getElementById('doctorFullName');
+        const medicalOrderInfoInput = document.getElementById('medicalOrderInfo');
+        const signatureUpload = document.getElementById('signatureUpload');
+        const signatureDataInput = document.getElementById('signatureData');
+        const saveButton = document.getElementById('saveButton');
+        const updateButton = document.getElementById('updateButton');
+        const cancelButton = document.getElementById('cancelButton');
+        const profileList = document.getElementById('profileList');
+        const noProfilesMessage = document.getElementById('noProfilesMessage');
+        const previewHeader = document.getElementById('previewHeader');
+        const previewSignature = document.getElementById('previewSignature');
+        const previewSignatureImg = document.getElementById('previewSignatureImg');
+        const debugInfo = document.getElementById('debugInfo');
+        
+        // Inizializzazione dell'applicazione
+        document.addEventListener('DOMContentLoaded', initializeApp);
+        
+        function initializeApp() {
+            // Carica i profili
+            loadProfiles();
+            
+            // Aggiorna l'anteprima quando cambiano i valori
+            const allInputs = form.querySelectorAll('input[type="text"], input[type="email"]');
+            allInputs.forEach(input => {
+                input.addEventListener('input', updateFormPreview);
+            });
+            
+            // Configura gli event listener
+            signatureUpload.addEventListener('change', handleSignatureUpload);
+            form.addEventListener('submit', handleFormSubmit);
+            updateButton.addEventListener('click', handleUpdateProfile);
+            cancelButton.addEventListener('click', resetForm);
+        }
+        
+        // Gestisce il caricamento della firma
+        function handleSignatureUpload(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    signatureDataInput.value = event.target.result;
+                    previewSignatureImg.src = event.target.result;
+                    previewSignatureImg.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+        
+        // Gestisce l'invio del form
+        function handleFormSubmit(e) {
+            e.preventDefault();
+            saveProfile();
+        }
+        
+        // Gestisce l'aggiornamento di un profilo esistente
+        function handleUpdateProfile() {
+            if (!currentEditingProfileId) return;
+            updateProfile();
+        }
+        
+        // Aggiorna l'anteprima in tempo reale
+        function updateFormPreview() {
+            // Anteprima header
+            let headerHtml = '';
+            if (doctorNameInput.value) headerHtml += `<p>${doctorNameInput.value}</p>`;
+            if (specializationInput.value) headerHtml += `<p>${specializationInput.value}</p>`;
+            if (addressInput.value) headerHtml += `<p>${addressInput.value}</p>`;
+            
+            let locationText = '';
+            if (postalCodeInput.value) locationText += postalCodeInput.value;
+            if (cityInput.value) {
+                if (locationText) locationText += ' ';
+                locationText += cityInput.value;
+            }
+            if (locationText) headerHtml += `<p>${locationText}</p>`;
+            
+            if (phoneInput.value) headerHtml += `<p>Tel. ${phoneInput.value}</p>`;
+            if (emailInput.value) headerHtml += `<p>E mail: ${emailInput.value}</p>`;
+            
+            previewHeader.innerHTML = headerHtml;
+            
+            // Anteprima firma
+            let signatureHtml = '';
+            let prefix = signatureTitleInput.value ? signatureTitleInput.value + ' ' : '';
+            if (doctorFullNameInput.value) signatureHtml += `<p>${prefix}${doctorFullNameInput.value}</p>`;
+            if (medicalOrderInfoInput.value) signatureHtml += `<p>${medicalOrderInfoInput.value}</p>`;
+            
+            previewSignature.innerHTML = signatureHtml;
+        }
+        
+        // Salva un nuovo profilo
+        function saveProfile() {
+            const profileId = Date.now().toString();
+            const profileData = {
+                id: profileId,
+                name: profileNameInput.value,
+                doctorName: doctorNameInput.value,
+                specialization: specializationInput.value,
+                address: addressInput.value,
+                postalCode: postalCodeInput.value,
+                city: cityInput.value,
+                phone: phoneInput.value,
+                email: emailInput.value,
+                signatureTitle: signatureTitleInput.value,
+                doctorFullName: doctorFullNameInput.value,
+                medicalOrderInfo: medicalOrderInfoInput.value,
+                signatureData: signatureDataInput.value
+            };
+            
+            // Controlla se è il primo profilo da impostare come predefinito
+            const isFirstProfile = doctorProfiles.length === 0;
+            
+            // Aggiungi nuovo profilo
+            doctorProfiles.push(profileData);
+            
+            // Se è il primo profilo, imposta come predefinito
+            if (isFirstProfile) {
+                activeProfileId = profileId;
+            }
+            
+            // Salva i profili e l'ID del profilo attivo
+            saveToLocalStorage();
+            
+            // Debug info
+            updateDebugInfo();
+            
+            // Aggiorna la UI
+            resetForm();
+            updateProfilesList();
+            
+            alert('Profilo salvato con successo!');
+        }
+        
+        // Aggiorna un profilo esistente
+        function updateProfile() {
+            if (!currentEditingProfileId) return;
+            
+            const index = doctorProfiles.findIndex(p => p.id === currentEditingProfileId);
+            
+            if (index !== -1) {
+                doctorProfiles[index] = {
+                    ...doctorProfiles[index],
+                    name: profileNameInput.value,
+                    doctorName: doctorNameInput.value,
+                    specialization: specializationInput.value,
+                    address: addressInput.value,
+                    postalCode: postalCodeInput.value,
+                    city: cityInput.value,
+                    phone: phoneInput.value,
+                    email: emailInput.value,
+                    signatureTitle: signatureTitleInput.value,
+                    doctorFullName: doctorFullNameInput.value,
+                    medicalOrderInfo: medicalOrderInfoInput.value
+                };
+                
+                // Aggiorna la firma solo se è stata caricata una nuova
+                if (signatureDataInput.value) {
+                    doctorProfiles[index].signatureData = signatureDataInput.value;
+                }
+                
+                // Salva le modifiche
+                saveToLocalStorage();
+                
+                // Debug info
+                updateDebugInfo();
+                
+                resetForm();
+                updateProfilesList();
+                
+                alert('Profilo aggiornato con successo!');
+            }
+        }
+        
+        // Elimina un profilo
+        function deleteProfile(profileId) {
+            if (!confirm('Sei sicuro di voler eliminare questo profilo?')) return;
+            
+            const isActiveProfile = activeProfileId === profileId;
+            
+            // Rimuovi il profilo
+            doctorProfiles = doctorProfiles.filter(p => p.id !== profileId);
+            
+            // Se era il profilo attivo, seleziona il primo disponibile
+            if (isActiveProfile && doctorProfiles.length > 0) {
+                activeProfileId = doctorProfiles[0].id;
+            } else if (doctorProfiles.length === 0) {
+                activeProfileId = null;
+            }
+            
+            // Salva le modifiche
+            saveToLocalStorage();
+            
+            // Debug info
+            updateDebugInfo();
+            
+            updateProfilesList();
+        }
+        
+        // Carica un profilo per la modifica
+        function editProfile(profileId) {
+            const profile = doctorProfiles.find(p => p.id === profileId);
+            
+            if (profile) {
+                profileNameInput.value = profile.name || '';
+                doctorNameInput.value = profile.doctorName || '';
+                specializationInput.value = profile.specialization || '';
+                addressInput.value = profile.address || '';
+                postalCodeInput.value = profile.postalCode || '';
+                cityInput.value = profile.city || '';
+                phoneInput.value = profile.phone || '';
+                emailInput.value = profile.email || '';
+                signatureTitleInput.value = profile.signatureTitle || '';
+                doctorFullNameInput.value = profile.doctorFullName || '';
+                medicalOrderInfoInput.value = profile.medicalOrderInfo || '';
+                signatureDataInput.value = profile.signatureData || '';
+                
+                if (profile.signatureData) {
+                    previewSignatureImg.src = profile.signatureData;
+                    previewSignatureImg.style.display = 'block';
+                } else {
+                    previewSignatureImg.style.display = 'none';
+                }
+                
+                // Aggiorna stato di modifica
+                currentEditingProfileId = profileId;
+                saveButton.style.display = 'none';
+                updateButton.style.display = 'inline-block';
+                cancelButton.style.display = 'inline-block';
+                
+                updateFormPreview();
+            }
+        }
+        
+        // Attiva un profilo come predefinito
+        function activateProfile(profileId) {
+            activeProfileId = profileId;
+            saveToLocalStorage();
+            updateProfilesList();
+            alert('Profilo impostato come predefinito!');
+        }
+        
+        // Ripristina form vuoto
+        function resetForm() {
+            form.reset();
+            currentEditingProfileId = null;
+            saveButton.style.display = 'inline-block';
+            updateButton.style.display = 'none';
+            cancelButton.style.display = 'none';
+            previewSignatureImg.style.display = 'none';
+            signatureDataInput.value = '';
+            updateFormPreview();
+        }
+        
+        // Carica i profili dal localStorage
+        function loadProfiles() {
+            try {
+                const profilesJson = localStorage.getItem('doctorProfiles');
+                doctorProfiles = profilesJson ? JSON.parse(profilesJson) : [];
+                activeProfileId = localStorage.getItem('activeProfileId');
+                
+                // Debug info
+                updateDebugInfo();
+                
+                updateProfilesList();
+            } catch (error) {
+                console.error("Errore nel caricamento dei profili:", error);
+                doctorProfiles = [];
+                activeProfileId = null;
+                updateProfilesList();
+            }
+        }
+        
+        // Aggiorna la visualizzazione dell'elenco dei profili
+        function updateProfilesList() {
+            if (doctorProfiles.length === 0) {
+                noProfilesMessage.style.display = 'block';
+                profileList.innerHTML = '';
+                profileList.appendChild(noProfilesMessage);
+                return;
+            }
+            
+            noProfilesMessage.style.display = 'none';
+            profileList.innerHTML = '';
+            
+            doctorProfiles.forEach(profile => {
+                const profileElement = document.createElement('div');
+                profileElement.className = 'profile-item';
+                if (profile.id === activeProfileId) {
+                    profileElement.classList.add('selected');
+                }
+                
+                profileElement.innerHTML = `
+                    <h3>${profile.name}</h3>
+                    <p>${profile.doctorName}</p>
+                    <p>${profile.specialization || ''}</p>
+                    <div class="profile-actions">
+                        <button class="activate-btn" ${profile.id === activeProfileId ? 'disabled' : ''}>
+                            ${profile.id === activeProfileId ? 'Predefinito' : 'Imposta predefinito'}
+                        </button>
+                        <button class="edit-btn">Modifica</button>
+                        <button class="delete-btn">Elimina</button>
+                    </div>
+                `;
+                
+                // Aggiungi listener per i pulsanti
+                const activateBtn = profileElement.querySelector('.activate-btn');
+                const editBtn = profileElement.querySelector('.edit-btn');
+                const deleteBtn = profileElement.querySelector('.delete-btn');
+                
+                activateBtn.addEventListener('click', () => activateProfile(profile.id));
+                editBtn.addEventListener('click', () => editProfile(profile.id));
+                deleteBtn.addEventListener('click', () => deleteProfile(profile.id));
+                
+                profileList.appendChild(profileElement);
+            });
+        }
+        
+        // Salva i profili e l'ID del profilo attivo nel localStorage
+        function saveToLocalStorage() {
+            localStorage.setItem('doctorProfiles', JSON.stringify(doctorProfiles));
+            
+            if (activeProfileId) {
+                localStorage.setItem('activeProfileId', activeProfileId);
+            } else if (doctorProfiles.length === 0) {
+                localStorage.removeItem('activeProfileId');
+            }
+        }
+        
+        // Aggiorna le informazioni di debug (utili per la risoluzione dei problemi)
+        function updateDebugInfo() {
+            debugInfo.innerHTML = `
+                <p>Profili salvati: ${doctorProfiles.length}</p>
+                <p>Profilo attivo: ${activeProfileId || 'nessuno'}</p>
+                <p>localStorage doctorProfiles: ${Boolean(localStorage.getItem('doctorProfiles'))}</p>
+                <p>localStorage activeProfileId: ${localStorage.getItem('activeProfileId') || 'non impostato'}</p>
+            `;
+        }
+    </script>
+</body>
+</html>
