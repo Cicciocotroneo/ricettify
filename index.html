@@ -203,11 +203,11 @@
             <input type="text" id="birthDate" pattern="\d{2}/\d{2}/\d{4}" placeholder="dd/mm/yyyy" required>
 
             <div class="checkbox-group">
-                <label><input type="radio" name="diagnosisType" value="sospetto" checked> Sospetto</label>
+                <label><input type="radio" name="diagnosisType" value="sospetto" checked> Ipotesi diagnostica</label>
                 <label><input type="radio" name="diagnosisType" value="diagnosi"> Diagnosi</label>
             </div>
 
-            <label for="diagnosis">Descrizione Diagnosi/Sospetto:</label>
+            <label for="diagnosis">Descrizione Diagnosi/Ipotesi:</label>
             <input type="text" id="diagnosis" required>
 
             <div class="checkbox-group">
@@ -453,7 +453,7 @@
 
             // Mostra diagnosi/sospetto
             if (data.diagnosisType === 'sospetto') {
-                outputDiagnosis.innerHTML = `<strong>Si sospetta:</strong><br>${data.diagnosis}`;
+                outputDiagnosis.innerHTML = `<strong>Ipotesi diagnostica:</strong><br>${data.diagnosis}`;
             } else {
                 outputDiagnosis.innerHTML = `<strong>Diagnosi:</strong><br>${data.diagnosis}`;
             }
