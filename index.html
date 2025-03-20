@@ -39,7 +39,7 @@
             padding: 20px;
             background-color: #f9f9f9;
             position: relative;
-            font-size: 14px;
+            font-size: 12px;
         }
         .header {
             text-align: right;
@@ -64,7 +64,7 @@
         }
         .prescription-section {
             margin-top: 25px;
-            margin-bottom: 60px;
+            margin-bottom: 30px;
         }
         .date-info {
             margin-bottom: 20px;
@@ -114,60 +114,51 @@
             display: none;
         }
         @media print {
-    @page {
-        size: A4;
-        margin: 15mm; /* Margini aumentati a 15mm su tutti i lati */
-    }
-    body {
-        font-size: 18px; /* Imposta il font-size di base per la stampa */
-        width: 180mm; /* Larghezza A4 (210mm) meno i margini */
-        height: 260mm; /* Altezza A4 (290mm) meno i margini */
-        margin: 0;
-        padding: 0;
-    }
-    .container {
-        max-width: 210mm; /* Larghezza contenitore adattata */
-    }
-    button, .container > h1, form, .action-links, .profile-selector {
-        display: none;
-    }
-    .output {
-        border: none;
-        padding: 0;
-        margin: 0;
-        width: 100%;
-        font-size: 18px; /* Imposta il font-size per l'output */
-    }
-    .header {
-        margin-bottom: 50px;
-        font-size: 20px; /* Aumenta il font-size per l'intestazione */
-    }
-    .patient-info {
-        margin-bottom: 50px;
-        font-size: 20px; /* Aumenta il font-size per le informazioni del paziente */
-    }
-    .diagnosis-section {
-        margin-bottom: 25px;
-        font-size: 18px; /* Aumenta il font-size per la sezione diagnosi */
-    }
-    .prescription-section {
-        margin-top: 25px;
-        margin-bottom: 40px;
-        font-size: 18px; /* Aumenta il font-size per la sezione prescrizione */
-    }
-    .date-info {
-        margin-bottom: 15px;
-        font-size: 18px; /* Aumenta il font-size per la data */
-    }
-    .signature {
-        margin-top: 0px;
-        margin-left: 60%; /* Sposta la firma più a destra */
-        font-size: 18px; /* Aumenta il font-size per la firma */
-    }
-    .signature img {
-        width: 150px; /* Mantieni la dimensione dell'immagine della firma */
-    }
-}
+            @page {
+                size: A4;
+                margin: 15mm; /* Margini aumentati a 15mm su tutti i lati */
+            }
+            body {
+                font-size: 18px;
+                width: 180mm; /* Larghezza A4 (210mm) meno i margini */
+                height: 260mm; /* Altezza A4 (290mm) meno i margini */
+                margin: 0;
+                padding: 0;
+            }
+            .container {
+                max-width: 210mm; /* Larghezza contenitore adattata */
+            }
+            button, .container > h1, form, .action-links, .profile-selector {
+                display: none;
+            }
+            .output {
+                border: none;
+                padding: 0;
+                margin: 0;
+                width: 100%;
+            }
+            .header {
+                margin-bottom: 50px;
+            }
+            .patient-info {
+                margin-bottom: 50px;
+Font-size: 20px;
+            }
+            .diagnosis-section {
+                margin-bottom: 25px;
+            }
+            .prescription-section {
+                margin-top: 25px;
+                margin-bottom: 40px;
+            }
+            .date-info {
+                margin-bottom: 15px;
+            }
+            .signature {
+                margin-top: 0px;
+                margin-left: 60%; /* Sposta la firma più a destra */
+            }
+        }
         @media (max-width: 600px) {
             .container {
                 padding: 10px;
