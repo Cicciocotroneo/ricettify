@@ -371,10 +371,45 @@
             diagnosisInput.addEventListener('input', handleDiagnosisInput);
             diagnosisInput.addEventListener('keydown', handleDiagnosisKeydown);
             diagnosisAutocomplete.addEventListener('click', handleAutocompleteClick);
+            
+            // Gestione dei click per chiudere i suggerimenti (per desktop)
             document.addEventListener('click', function(e) {
-                if (e.target !== diagnosisInput && e.target !== diagnosisAutocomplete) {
+                if (e.target !== diagnosisInput && !diagnosisAutocomplete.contains(e.target)) {
                     diagnosisAutocomplete.style.display = 'none';
                 }
+            });
+            
+            // Aggiungi un pulsante per cancellare/resettare il campo su mobile
+            const clearButton = document.createElement('button');
+            clearButton.type = 'button';
+            clearButton.className = 'autocomplete-clear-input';
+            clearButton.innerHTML = '×';
+            clearButton.style.position = 'absolute';
+            clearButton.style.right = '10px';
+            clearButton.style.top = '50%';
+            clearButton.style.transform = 'translateY(-50%)';
+            clearButton.style.background = 'none';
+            clearButton.style.border = 'none';
+            clearButton.style.fontSize = '18px';
+            clearButton.style.color = '#999';
+            clearButton.style.display = 'none';
+            clearButton.style.cursor = 'pointer';
+            clearButton.style.zIndex = '5';
+            
+            diagnosisInput.parentNode.style.position = 'relative';
+            diagnosisInput.parentNode.appendChild(clearButton);
+            
+            // Mostra/nascondi il pulsante in base al contenuto del campo
+            diagnosisInput.addEventListener('input', function() {
+                clearButton.style.display = this.value ? 'block' : 'none';
+            });
+            
+            // Pulisci il campo quando si preme il pulsante
+            clearButton.addEventListener('click', function() {
+                diagnosisInput.value = '';
+                clearButton.style.display = 'none';
+                diagnosisAutocomplete.style.display = 'none';
+                diagnosisInput.focus();
             });
         }
 
@@ -484,6 +519,24 @@
                 diagnosisAutocomplete.style.display = 'block';
             } else {
                 diagnosisAutocomplete.style.display = 'none';
+            }
+            
+            // Aggiungi anche un tap fuori per chiudere i suggerimenti (utile su mobile)
+            // Questo viene aggiunto solo quando i suggerimenti sono mostrati
+            if (matchingCodes.length > 0) {
+                // Rimuoviamo eventuali listener precedenti per evitare duplicazioni
+                document.removeEventListener('touchstart', handleOutsideTap);
+                document.addEventListener('touchstart', handleOutsideTap);
+            }
+        }
+        
+        // Gestisce il tap fuori dai suggerimenti (per dispositivi mobili)
+        function handleOutsideTap(e) {
+            // Se il tap non è sul campo input o sui suggerimenti, chiudi i suggerimenti
+            if (e.target !== diagnosisInput && !diagnosisAutocomplete.contains(e.target)) {
+                diagnosisAutocomplete.style.display = 'none';
+                // Rimuovi il listener dopo l'uso
+                document.removeEventListener('touchstart', handleOutsideTap);
             }
         }
 
