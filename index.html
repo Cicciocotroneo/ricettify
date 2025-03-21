@@ -113,6 +113,17 @@
             margin-bottom: 15px;
             display: none;
         }
+
+input[list] {
+    width: 100%;
+    padding: 8px;
+    margin-top: 5px;
+    box-sizing: border-box;
+}
+
+datalist {
+    display: none; /* Nasconde il datalist di default */
+}
         @media print {
             @page {
                 size: A4;
@@ -207,9 +218,9 @@
                 <label><input type="radio" name="diagnosisType" value="diagnosi"> Diagnosi</label>
             </div>
 
-            <label for="diagnosis">Descrizione Diagnosi/Ipotesi:</label>
-            <input type="text" id="diagnosis" required>
-
+           <label for="diagnosis">Descrizione Diagnosi/Sospetto:</label>
+<input type="text" id="diagnosis" list="diagnosisList" required>
+<datalist id="diagnosisList"></datalist>
             <div class="checkbox-group">
                 <label><input type="radio" name="type" value="prescrizione" checked> Prescrizione</label>
                 <label><input type="radio" name="type" value="richiesta"> Richiesta</label>
@@ -285,6 +296,31 @@
             form.addEventListener('submit', handleFormSubmit);
         }
 
+        // Carica il file CSV per l'autocompletamento della diagnosi
+    loadDiagnosisCSV();
+}
+
+function loadDiagnosisCSV() {
+    // Carica il file CSV
+    fetch('idc9.csv')
+        .then(response => response.text())
+        .then(data => {
+            // Parsa il CSV
+            const rows = data.split('\n');
+            const diagnosisList = document.getElementById('diagnosisList');
+
+            rows.forEach(row => {
+                const [code, name] = row.split(','); // Assumendo che il CSV sia formato da "codice,nome"
+                if (code && name) {
+                    const option = document.createElement('option');
+                    option.value = `${code} - ${name.trim()}`; // Formato: "codice - nome"
+                    diagnosisList.appendChild(option);
+                }
+            });
+        })
+        .catch(error => console.error('Errore nel caricamento del CSV:', error));
+}
+        
         // Imposta la data corrente nel campo data della ricetta
         function setCurrentDate() {
             const today = new Date();
