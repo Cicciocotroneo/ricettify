@@ -139,6 +139,7 @@
             max-height: 200px;
             overflow-y: auto;
             box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            display: none; /* Nascosto all'inizio */
         }
         .autocomplete-item {
             padding: 10px;
@@ -155,6 +156,28 @@
         }
         .autocomplete-item.selected {
             background-color: #e9e9e9;
+        }
+        .autocomplete-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 10px;
+            background-color: #f5f5f5;
+            border-bottom: 1px solid #ddd;
+        }
+        .autocomplete-header span {
+            font-size: 14px;
+            font-weight: bold;
+        }
+        .autocomplete-close {
+            background: none;
+            border: none;
+            color: #666;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            padding: 0 4px;
+            margin: 0;
         }
         @media print {
             @page {
@@ -357,24 +380,55 @@
 
         // Funzione per caricare i codici ICD9
         function loadICD9Codes() {
-            fetch('idc9.csv')
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error(`Errore nel caricamento del file CSV: ${response.status}`);
-                    }
-                    return response.text();
+            // Attendi un momento per assicurarti che tutti gli elementi DOM siano caricati
+            setTimeout(() => {
+                // Prima imposta i dati di esempio come fallback
+                icd9Codes = [
+                    { code: "001", name: "Colera" },
+                    { code: "002", name: "Febbre tifoide" },
+                    { code: "034.0", name: "Faringite streptococcica" },
+                    { code: "250", name: "Diabete mellito" },
+                    { code: "401", name: "Ipertensione essenziale" },
+                    { code: "428", name: "Insufficienza cardiaca" },
+                    { code: "493", name: "Asma" },
+                    { code: "530.81", name: "Reflusso esofageo" },
+                    { code: "724.2", name: "Lombalgia" },
+                    { code: "780.4", name: "Vertigini" }
+                ];
+                
+                // Poi prova a caricare dal file
+                fetch('idc9.csv')
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`Errore nel caricamento del file CSV: ${response.status}`);
+                        }
+                        return response.text();
                 })
                 .then(data => {
                     // Parsing del CSV
                     const rows = data.split('\n');
                     icd9Codes = rows.map(row => {
-                        const columns = row.split(',');
-                        // Assumiamo che la prima colonna sia il codice e la seconda il nome
-                        if (columns.length >= 2) {
-                            return {
-                                code: columns[0].trim(),
-                                name: columns[1].trim()
-                            };
+                        // Gestisce correttamente le virgole nel testo utilizzando una regex
+                        // che tiene conto del fatto che i campi possono essere racchiusi tra virgolette
+                        let matches = row.match(/(".*?"|[^",]+)(?=\s*,|\s*$)/g);
+                        if (!matches) {
+                            // Se la regex non trova corrispondenze, prova con una semplice divisione
+                            const columns = row.split(',');
+                            if (columns.length >= 2) {
+                                return {
+                                    code: columns[0].trim(),
+                                    name: columns[1].trim()
+                                };
+                            }
+                        } else {
+                            // Rimuove le virgolette intorno ai campi
+                            matches = matches.map(m => m.replace(/^"(.*)"$/, '$1'));
+                            if (matches.length >= 2) {
+                                return {
+                                    code: matches[0].trim(),
+                                    name: matches[1].trim()
+                                };
+                            }
                         }
                         return null;
                     }).filter(item => item !== null);
@@ -394,10 +448,16 @@
                         { code: "493", name: "Asma" },
                         { code: "530.81", name: "Reflusso esofageo" },
                         { code: "724.2", name: "Lombalgia" },
-                        { code: "780.4", name: "Vertigini" }
+                        { code: "780.4", name: "Vertigini" },
+                        { code: "786.2", name: "Tosse" },
+                        { code: "789.0", name: "Dolore addominale" },
+                        { code: "599.0", name: "Infezione urinaria" },
+                        { code: "465.9", name: "Infezione vie respiratorie superiori" },
+                        { code: "477.9", name: "Rinite allergica" }
                     ];
                     console.log("Usando codici di fallback per il test");
                 });
+            }, 500); // Attendi 500ms per assicurarti che tutto sia caricato
         }
 
         // Gestisce l'input nel campo diagnosi
@@ -416,6 +476,8 @@
                 item.name.toLowerCase().includes(query)
             );
             
+            console.log(`Trovati ${matchingCodes.length} risultati per "${query}"`);
+            
             // Mostra i risultati se ci sono corrispondenze
             if (matchingCodes.length > 0) {
                 renderAutocompleteResults(matchingCodes);
@@ -431,8 +493,27 @@
             const maxResults = 10;
             const limitedResults = results.slice(0, maxResults);
             
+            console.log(`Renderizzando ${limitedResults.length} risultati`);
+            
             // Pulisce i risultati precedenti
             diagnosisAutocomplete.innerHTML = '';
+            
+            // Aggiunge l'header con il pulsante di chiusura
+            const header = document.createElement('div');
+            header.className = 'autocomplete-header';
+            header.innerHTML = `
+                <span>Suggerimenti (${limitedResults.length})</span>
+                <button class="autocomplete-close" title="Chiudi suggerimenti">×</button>
+            `;
+            diagnosisAutocomplete.appendChild(header);
+            
+            // Aggiungi event listener al pulsante di chiusura
+            const closeButton = header.querySelector('.autocomplete-close');
+            closeButton.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                diagnosisAutocomplete.style.display = 'none';
+            });
             
             // Aggiunge i nuovi risultati
             limitedResults.forEach((item, index) => {
@@ -443,6 +524,7 @@
                 div.dataset.name = item.name;
                 div.innerHTML = `<span class="autocomplete-code">${item.code}</span> ${item.name}`;
                 diagnosisAutocomplete.appendChild(div);
+                console.log(`Aggiunto elemento: ${item.code} - ${item.name}`);
             });
         }
 
